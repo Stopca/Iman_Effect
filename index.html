@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora Anti-Efecto Imán</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Configuración manual para habilitar el modo oscuro por clase en CDN -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-100 antialiased selection:bg-indigo-200 selection:text-indigo-900 pb-20 transition-colors duration-200">
+
+  <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm transition-colors duration-200">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-inner">
+          <i class="fa-solid fa-magnet text-sm"></i>
+        </div>
+        <h1 class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white leading-none">
+          Anti-<span class="text-indigo-600 dark:text-indigo-400">Imán</span>
+        </h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Botón de Modo Oscuro -->
+        <button id="themeToggle" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:block"></i>
+        </button>
+
+        <div class="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
+          <button id="btnEUR" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white dark:bg-slate-600 text-indigo-700 dark:text-white shadow-sm border border-slate-200 dark:border-slate-500">EUR</button>
+          <button id="btnMXN" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-transparent">MXN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8 transition-colors duration-200">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white">Configura tu perfil</h2>
+        <div class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 px-3 py-1.5 rounded-full border border-slate-100 dark:border-slate-600">
+          <div id="rateStatus" class="w-2 h-2 rounded-full bg-slate-300"></div>
+          <span id="rateText">Actualizando divisa...</span>
+        </div>
+      </div>
+      
+      <form id="calculatorForm" class="space-y-6">
+        <div>
+          <div class="flex justify-between items-end mb-2">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">Presupuesto Mensual Base</label>
+            <span id="budgetValue" class="text-xl font-black text-indigo-600 dark:text-indigo-400">800 €</span>
+          </div>
+          <input type="range" id="budgetInput" min="500" max="1800" step="50" value="800" class="w-full h-2 bg-slate-200 dark:bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-600 dark:accent-indigo-400">
+          <div id="sliderRangeLabels" class="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1.5">
+            <span>500 €</span><span>1.100 €</span><span>1.800 €</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">Sector Principal</label>
+            <select id="sectorInput" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all">
+              <option value="all">Cualquier sector</option>
+              <option value="tech">Tecnología / IT</option>
+              <option value="industry">Ingeniería / Industria</option>
+              <option value="creative">Marketing / Creativo</option>
+              <option value="biotech">Biociencias</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">Tipo de Alojamiento</label>
+            <div class="flex gap-2">
+              <label class="flex-1 cursor-pointer">
+                <input type="radio" name="housing" value="shared" checked class="peer sr-only">
+                <div class="p-2.5 text-center border border-slate-200 dark:border-slate-600 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-900/30 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400 text-slate-600 dark:text-slate-400 text-xs font-semibold transition-all">
+                  <i class="fa-solid fa-user-group mr-1"></i> Habitación
+                </div>
+              </label>
+              <label class="flex-1 cursor-pointer">
+                <input type="radio" name="housing" value="solo" class="peer sr-only">
+                <div class="p-2.5 text-center border border-slate-200 dark:border-slate-600 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 dark:peer-checked:bg-indigo-900/30 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400 text-slate-600 dark:text-slate-400 text-xs font-semibold transition-all">
+                  <i class="fa-solid fa-house mr-1"></i> Estudio Solo
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">Estrategia frente al Efecto Imán</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="priority" value="local" checked class="peer sr-only">
+              <div class="p-2.5 text-center border border-slate-200 dark:border-slate-600 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white text-slate-600 dark:text-slate-400 text-[11px] font-medium transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-city text-sm"></i> Empleo Local Directo
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="priority" value="hybrid" class="peer sr-only">
+              <div class="p-2.5 text-center border border-slate-200 dark:border-slate-600 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white text-slate-600 dark:text-slate-400 text-[11px] font-medium transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-train-subway text-sm"></i> Modelo Híbrido (AVE)
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="priority" value="saving" class="peer sr-only">
+              <div class="p-2.5 text-center border border-slate-200 dark:border-slate-600 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-600 peer-checked:text-white text-slate-600 dark:text-slate-400 text-[11px] font-medium transition-all flex flex-col items-center gap-1">
+                <i class="fa-solid fa-piggy-bank text-sm"></i> Ahorro Máximo
+              </div>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Contenedor del Mapa -->
+    <div class="mb-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden z-10 relative">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+        <i class="fa-solid fa-map-location-dot text-indigo-600 dark:text-indigo-400"></i>
+        <h3 class="font-bold text-slate-800 dark:text-white text-sm">Mapa de Conexiones a la Capital</h3>
+      </div>
+      <div id="map" class="w-full h-64 bg-slate-100 dark:bg-slate-700 z-10"></div>
+    </div>
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-800 dark:bg-slate-950 p-4 rounded-2xl text-sm border border-transparent dark:border-slate-800">
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="bg-slate-700 p-2 rounded-lg text-slate-300">
+          <i class="fa-solid fa-location-crosshairs"></i>
+        </div>
+        <p class="text-slate-300" id="madridStatus">Calculando referencia en Madrid...</p>
+      </div>
+      <span id="madridBadge" class="bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg whitespace-nowrap text-center">Calculando</span>
+    </div>
+
+    <div class="flex items-center gap-2 mb-4">
+      <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Alternativas Estratégicas</h2>
+      <span class="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[10px] uppercase font-bold px-2 py-0.5 rounded-md">Recomendadas</span>
+    </div>
+
+    <div id="citiesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Tarjetas renderizadas por JS -->
+    </div>
+  </main>
+
+  <!-- Modal de Detalles de Ciudad -->
+  <div id="cityModal" class="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 opacity-0 transition-opacity">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden transform scale-95 transition-transform flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800">
+        <h3 class="font-bold text-slate-800 dark:text-white">Análisis de Destino</h3>
+        <button id="btnCloseModal" class="text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div id="modalContent" class="p-5 overflow-y-auto">
+        <!-- Contenido renderizado dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
